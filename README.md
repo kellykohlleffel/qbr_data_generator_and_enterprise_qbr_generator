@@ -1,9 +1,9 @@
 # QBR Data Generator
 
-A synthetic data generator for Quarterly Business Review (QBR) analysis, simulating integrated data from:
-- HubSpot (Deals data)
-- Jira (Product usage data)
-- Zendesk (Support ticket data)
+This project generates synthetic data for testing QBR (Quarterly Business Review) analysis systems. The generated data includes:
+- 750 randomly generated records with industry-specific company names
+- 5 control records for testing
+- Data representing integration from multiple systems and MEDDICC sales qualification
 
 ## Project Setup
 
@@ -74,69 +74,101 @@ git add .
 git commit -m "Remove files that should be ignored"
 ```
 
-## Data Sources
+## Data Sources & Fields
 
-### HubSpot (Deals Data)
-* company_id
-* company_name
-* industry
-* size
+### Company Information
+* company_id (Primary Key, format: 'COMPxxxx')
+* company_name (Industry-specific naming convention)
+* industry (Technology, Healthcare, Finance, Manufacturing, Retail)
+* size (Small, Medium, Enterprise)
 * contract_value
-* deal_stage
+* contract_start_date
+* contract_expiration_date
+
+### Deal/Financial Data (HubSpot)
+* deal_stage (Implementation, Live, At Risk, Stable)
 * renewal_probability
 * upsell_opportunity
+* qbr_quarter (Based on Fiscal Year: Feb 1 - Jan 31)
+* qbr_year
 
-### Zendesk (Support Data)
-* ticket_volume
-* avg_resolution_time_hours
-* csat_score
-* sla_compliance_rate
-
-### Jira (Product Usage/Development)
+### Product Usage Data (Jira)
 * active_users
 * feature_adoption_rate
 * custom_integrations
 * pending_feature_requests
 
-### Additional Fields
-* date
-* quarter
-* year
-* health_score (calculated metric)
+### Support Data (Zendesk)
+* ticket_volume
+* avg_resolution_time_hours
+* csat_score
+* sla_compliance_rate
+
+### MEDDICC Fields
+
+#### Metrics
+* success_metrics_defined (boolean)
+* roi_calculated (boolean)
+* estimated_roi_value (numeric)
+
+#### Economic Buyer
+* economic_buyer_identified (boolean)
+* executive_sponsor_engaged (boolean)
+* decision_maker_level (C-Level, VP, Director, Manager)
+
+#### Decision Process
+* decision_process_documented (boolean)
+* next_steps_defined (boolean)
+* decision_timeline_clear (boolean)
+
+#### Decision Criteria
+* technical_criteria_met (boolean)
+* business_criteria_met (boolean)
+* success_criteria_defined (text)
+
+#### Identified Pain
+* pain_points_documented (text)
+* pain_impact_level (High, Medium, Low)
+* urgency_level (High, Medium, Low)
+
+#### Champion
+* champion_identified (boolean)
+* champion_level (C-Level, VP, Director, Manager)
+* champion_engagement_score (1-5)
+
+#### Competition
+* competitive_situation (Single, Multiple, None)
+* competitive_position (Leader, Strong, Weak)
+
+### Calculated Metrics
+* health_score (Weighted calculation based on key metrics)
+
+## Control Records
+The dataset includes 5 specific control records:
+1. Kohlleffel Inc
+2. Hrncir Inc
+3. Millman Inc
+4. Tony Kelly Inc
+5. Kai Lee Inc
+
+All control records have:
+- Technology industry
+- Small company size
+- Specific contract values
+- Q4 2024 QBR period
+- Contract expiration date of 2025-01-31
+- All other fields randomly generated
 
 ## Running the Generator
 
 Generate sample data:
 ```bash
-python src/data_generator.py
+python3 src/data_generator.py
 ```
 
 The generated CSV file will be saved in the `output` directory at:
 ```plaintext
 ~/Documents/GitHub/qbr-data-generator/output/qbr_sample_data.csv
-```
-
-## Sample Output
-
-The generator creates a CSV file with 750 records. Here's how a single row looks as an unstructured document:
-
-```plaintext
-This review is for Company 0000. The customer identifier is COMP0000. They operate in the 
-Healthcare industry and are classified as a Medium business. The relationship began on 
-2023-01-04 and this review covers Q1 during the year 2023. Their annual contract value 
-is $71,538 and the current stage of their partnership is Implementation. Based on current 
-indicators, their likelihood of renewal is 88.8%. There is a potential upsell opportunity 
-of $19,000. The platform is actively used by 19 users with a feature adoption rate of 
-79.5%. They have implemented 1 custom integration and have submitted 1 feature request. 
-Over this period, they have opened 19 support tickets. Their average ticket resolution 
-time is 39.0 hours. Customer satisfaction is measured at 4.3 out of 5, and our SLA 
-compliance rate with this customer is 83.0%. The overall customer health score is 72.8.
-```
-
-## Project Location
-Your project will be located at:
-```plaintext
-~/Documents/GitHub/qbr-data-generator/
 ```
 
 ## Dependencies
@@ -147,40 +179,12 @@ pandas==2.1.0
 numpy==1.24.3
 ```
 
-### Visualization Dependencies (Optional)
-```plaintext
-plotly==5.18.0
-```
-
-## Version Control
-
-### Committing Changes
-1. Open GitHub Desktop
-2. Review changes
-3. Add commit message
-4. Click "Commit to main"
-5. Click "Push origin" to push to GitHub
-
-### Finding Output Files
-1. Open GitHub Desktop
-2. Right-click on repository
-3. Select "Show in Finder"
-4. Navigate to the `output` folder
-
-## Source Code
-
-### data_generator.py
-The main script for generating synthetic QBR data can be found at:
-```plaintext
-src/data_generator.py
-```
-
-## Next Steps
-* Review generated data for accuracy
-* Customize data ranges if needed
-* Add additional metrics
-* Integrate with visualization tools
-* Set up automated data generation pipelines
+## Notes
+- The project uses a fiscal year that begins February 1 and ends January 31
+- Company names are generated based on industry for more realistic data
+- Health score is calculated using weighted metrics from various sources
+- Generated data includes a mix of boolean, numeric, and categorical fields
+- All metric ranges are set to realistic values based on typical business scenarios
 
 ## Support
 For issues or questions, please open an issue in the GitHub repository.
