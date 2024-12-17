@@ -76,7 +76,7 @@ git commit -m "Remove files that should be ignored"
 
 ## Data Sources & Fields
 
-### Company Information
+### Company Information (SFDC, Hubspot, Dynamics 365)
 * company_id (Primary Key, format: 'COMPxxxx')
 * company_name (Industry-specific naming convention)
 * industry (Technology, Healthcare, Finance, Manufacturing, Retail)
@@ -85,7 +85,7 @@ git commit -m "Remove files that should be ignored"
 * contract_start_date
 * contract_expiration_date
 
-### Deal/Financial Data (HubSpot)
+### Deal/Financial Data (SFDC, Hubspot, Dynamics 365)
 * deal_stage (Implementation, Live, At Risk, Stable)
 * renewal_probability
 * upsell_opportunity
