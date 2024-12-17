@@ -323,11 +323,22 @@ def get_similar_contexts(company_name, num_chunks):
     """Retrieve similar QBR contexts using vector similarity"""
     try:
         similarity_query = """
-        SELECT QBR_INFORMATION
-        FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA_VECTORS
-        WHERE COMPANY_NAME = ?
+        WITH similarity_cte AS (
+            SELECT 
+                company_name,
+                qbr_information,
+                vector_cosine_similarity(
+                    QBR_EMBEDDINGS,
+                    (SELECT QBR_EMBEDDINGS FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA_VECTORS WHERE company_name = ?)
+                ) as similarity
+            FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA_VECTORS
+            WHERE company_name != ?
+            QUALIFY ROW_NUMBER() OVER (ORDER BY similarity DESC) <= ?
+        )
+        SELECT qbr_information
+        FROM similarity_cte
         """
-        return session.sql(similarity_query, params=[company_name]).to_pandas()
+        return session.sql(similarity_query, params=[company_name, company_name, num_chunks]).to_pandas()
     except Exception as e:
         st.error(f"Error retrieving similar contexts: {str(e)}")
         return None
