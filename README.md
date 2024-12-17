@@ -1,6 +1,6 @@
 # QBR Data Generator
 
-This project generates synthetic data for testing QBR (Quarterly Business Review) analysis systems. The generated data includes:
+This project generates synthetic data for testing QBR (Quarterly Business Review) generation systems. The generated data includes:
 - 750 randomly generated records with industry-specific company names
 - 5 control records for testing
 - Data representing integration from multiple systems and MEDDICC sales qualification
