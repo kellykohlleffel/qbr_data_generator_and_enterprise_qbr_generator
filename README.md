@@ -189,11 +189,11 @@ numpy==1.24.3
 ## Support
 For issues or questions, please open an issue in the GitHub repository.
 
-## Transformations in Snowflake
+## Transformations in Snowflake for QBR Generator
 ```
 /** Transformation #1 - Create the qbr_data_single_string table and the qbr_information column using concat and prefixes for columns (creates an "unstructured" doc for each winery/vineyard)
 /** Create each qbr review as a single string vs multiple fields **/
-CREATE OR REPLACE TABLE HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA_SINGLE_STRING AS 
+CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS 
     SELECT company_name, CONCAT(
         'The company name is ', IFNULL(company_name, 'unknown'), '.',
         ' The company ID is ', IFNULL(company_id, 'unknown'), '.',
