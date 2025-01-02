@@ -582,3 +582,9 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+## QBR Data Generator in action
+
+### QBR Data Generator: csv output file
+
+![QBR Data Generator CSV Output File](images/qbr_data_generator_csv_output.png)
