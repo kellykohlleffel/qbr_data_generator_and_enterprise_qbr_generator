@@ -191,7 +191,7 @@ For issues or questions, please open an issue in the GitHub repository.
 
 ## Transformations in Snowflake for QBR Generator
 ```
-/** Transformation #1 - Create the qbr_data_single_string table and the qbr_information column using concat and prefixes for columns (creates an "unstructured" doc for each winery/vineyard)
+/** Transformation #1 - Create the qbr_data_single_string table and the qbr_information column using concat and prefixes for columns (creates an "unstructured" doc for each account)
 /** Create each qbr review as a single string vs multiple fields **/
 CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS 
     SELECT company_name, CONCAT(
@@ -234,7 +234,7 @@ CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS
         ' The overall health score is ', IFNULL(health_score::STRING, 'unknown'), '.',
         ' This QBR covers ', IFNULL(qbr_quarter, 'unknown'), ' ', IFNULL(qbr_year::STRING, 'unknown'), '.'
     ) AS qbr_information
-    FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA;
+    FROM QBR_DATA;
 
 /** Transformation #2 - Using the Snowflake Cortex embed_text_768 LLM function, creates embeddings from the newly created qbr_information column and create a vector table called qbr_embeddings.
 /** Create the vector table from the qbr_information column **/
@@ -311,7 +311,7 @@ def get_company_data(company_name):
             RENEWAL_PROBABILITY,
             QBR_QUARTER,
             QBR_YEAR
-        FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA
+        FROM QBR_DATA
         WHERE COMPANY_NAME = ?
         """
         return session.sql(metrics_query, params=[company_name]).to_pandas()
@@ -329,9 +329,9 @@ def get_similar_contexts(company_name, num_chunks):
                 qbr_information,
                 vector_cosine_similarity(
                     QBR_EMBEDDINGS,
-                    (SELECT QBR_EMBEDDINGS FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA_VECTORS WHERE company_name = ?)
+                    (SELECT QBR_EMBEDDINGS FROM QBR_DATA_VECTORS WHERE company_name = ?)
                 ) as similarity
-            FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA_VECTORS
+            FROM QBR_DATA_VECTORS
             WHERE company_name != ?
             QUALIFY ROW_NUMBER() OVER (ORDER BY similarity DESC) <= ?
         )
@@ -467,7 +467,7 @@ def main():
         # Company Selection
         company_query = """
         SELECT DISTINCT COMPANY_NAME
-        FROM HOL_DATABASE.A_QBR_TEST_SALES.QBR_DATA
+        FROM QBR_DATA
         ORDER BY COMPANY_NAME
         """
         companies_df = session.sql(company_query).to_pandas()
