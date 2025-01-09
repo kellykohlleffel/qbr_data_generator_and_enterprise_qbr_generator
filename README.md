@@ -251,6 +251,11 @@ CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS
 
 ## Streamlit in Snowflake QBR Generator Application
 ```
+#
+# Fivetran Snowflake Cortex Streamlit Lab
+# Build a QBR Generator Application
+#
+
 import streamlit as st
 from snowflake.snowpark.context import get_active_session
 import pandas as pd
