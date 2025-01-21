@@ -190,7 +190,7 @@ numpy==1.24.3
 For issues or questions, please open an issue in the GitHub repository.
 
 ## Transformations in Snowflake for QBR Generator
-```
+```sql
 /** Transformation #1 - Create the qbr_data_single_string table and the qbr_information column using concat and prefixes for columns (creates an "unstructured" doc for each account)
 /** Create each qbr review as a single string vs multiple fields **/
 CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS 
@@ -250,7 +250,7 @@ CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS
 ```
 
 ## Streamlit in Snowflake QBR Generator Application
-```
+```python
 #
 # Fivetran Snowflake Cortex Streamlit Lab
 # Build a QBR Generator Application
