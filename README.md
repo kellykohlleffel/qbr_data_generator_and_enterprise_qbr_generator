@@ -1,9 +1,13 @@
 # QBR Data Generator
 
-This project generates synthetic data for testing QBR (Quarterly Business Review) generation systems. The generated data includes:
+This project generates synthetic data for use in a QBR (Quarterly Business Review) generation application. The data generator simulates a combined dataset from a CRM (e.g. SFDC, Hubspot, D365), an issue and project tracking solution like Jira, and a customer service and support platform such as Zendesk. The generated data includes:
 - 750 randomly generated records with industry-specific company names
 - 5 control records for testing
 - Data representing integration from multiple systems and MEDDICC sales qualification
+
+In addition, the second part of this project addresses two critical sales challenges that are organization-wide in every company:
+1. Creating reliable, standardized quarterly business review presentations for sales management
+2. Reducing (or potentially eliminating) the time account executives spend preparing QBRs
 
 ## Project Setup
 
@@ -189,7 +193,35 @@ numpy==1.24.3
 ## Support
 For issues or questions, please open an issue in the GitHub repository.
 
-## Transformations in Snowflake for QBR Generator
+## QBR Data Generator in action
+
+### QBR Data Generator: csv output file
+
+![QBR Data Generator CSV Output File](images/qbr_data_generator_csv_output.png)
+
+## Next Steps
+1. Import the `qbr_sample_data.csv` as a new table named `qbr_data` into your database of choice (I used PostgreSQL and created a new schema called `sales`).
+2. Using Fivetran Automated Data Movement, connect to PostgreSQL and sync the new table to your destination of choice (I used Snowflake in this example).
+3. Once the data is synced to Snowflake, open a new worksheet in Snowflake Snowsight and run the transformations as described below (be sure and set your database and schema context in the worksheet).
+
+### Data Preview in Snowflake Snowsight
+![QBR Data Preview in Snowsight](images/qbr_data_preview.png)
+
+## Transformations in Snowflake for the QBR Generator
+
+### Transformation 1
+The `QBR_DATA_SINGLE_STRING` transformation consolidates multiple QBR fields into a single text string per account, which is crucial for embedding model processing. LLM embedding models are designed to process natural language content as a unified text block rather than separate fields. 
+
+This consolidation, with descriptive prefixes for each field, ensures the embedding model can effectively capture semantic relationships across all QBR data points while maintaining context.
+
+### Transformation 2
+The `qbr_data_vectors` transformation creates a vector table using Snowflake's Cortex embed_text_768 is a fundamental component for implementing RAG (Retrieval Augmented Generation) with LLMs. 
+
+These embeddings allow for semantic similarity searches, enabling the system to efficiently retrieve the most relevant QBR contexts when generating responses. In a RAG workflow, these vectors serve as the search index that helps identify and retrieve the most pertinent company information before it's fed into the LLM prompt.
+
+### Sample Query
+The sample query serves as a verification step to inspect both the consolidated text format and its corresponding vector embeddings. This validation is important because it confirms that both the text concatenation maintained field context and the embedding process generated the expected vector dimensions.
+
 ```sql
 /** Transformation #1 - Create the qbr_data_single_string table and the qbr_information column using concat and prefixes for columns (creates an "unstructured" doc for each account)
 /** Create each qbr review as a single string vs multiple fields **/
@@ -249,7 +281,19 @@ CREATE OR REPLACE TABLE QBR_DATA_SINGLE_STRING AS
     WHERE qbr_information LIKE '%company_name is Kohlleffel Inc%';
 ```
 
+### Output of Completed Data Transformations
+![QBR Data Transformations in Snowsight](images/qbr_data_transforms.png)
+
 ## Streamlit in Snowflake QBR Generator Application
+
+This Streamlit application transforms the traditional QBR process by automating the generation of standardized, data-driven business reviews using Snowflake's native LLM capabilities. The app addresses **two critical challenges in sales organizations**: 
+1. Creating consistent, reliable QBR presentations for management
+2. Eliminating the time-intensive QBR preparation process for account executives.
+
+This app combines real-time metrics, historical data, and AI-powered analysis to generate comprehensive QBRs through an intuitive interface. Users can customize outputs through multiple templates (Executive, Technical, Customer Success, Sales) while maintaining standardization across the organization. 
+
+It also leverages vector similarity search for contextual relevance and provides structured outputs covering executive summaries, business impact, product adoption, and strategic recommendations - all without requiring manual data compilation or presentation creation from the sales team.
+
 ```python
 #
 # Fivetran Snowflake Cortex Streamlit Lab
@@ -588,8 +632,8 @@ if __name__ == "__main__":
     main()
 ```
 
-## QBR Data Generator in action
+## Enterprise QBR Generator in action
 
-### QBR Data Generator: csv output file
+### Enterprise QBR Generator: Streamlit in Snowflake RAG-based, Gen AI Data App
 
-![QBR Data Generator CSV Output File](images/qbr_data_generator_csv_output.png)
+![QBR Generator Data App](images/enterprise_qbr_generator.png)
