@@ -26,13 +26,19 @@ In addition, the second part of this project addresses two critical sales challe
 Create the following structure:
 ```plaintext
 qbr-data-generator/
-├── venv/
+├── files/
+│   ├── streamlit-code.py
+│   └── transformations.sql
+├── images/
+├── output/
 ├── src/
 │   ├── __init__.py
 │   └── data_generator.py
-├── output/
-├── requirements.txt
-└── README.md
+├── venv/
+├── .gitattributes
+├── .gitignore
+├── README.md
+└── requirements.txt
 ```
 
 Create directories and files using terminal commands:
