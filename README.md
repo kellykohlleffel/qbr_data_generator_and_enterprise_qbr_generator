@@ -294,6 +294,10 @@ This app combines real-time metrics, historical data, and AI-powered analysis to
 
 It also leverages vector similarity search for contextual relevance and provides structured outputs covering executive summaries, business impact, product adoption, and strategic recommendations - all without requiring manual data compilation or presentation creation from the sales team.
 
+## Usage
+1. From within Snowflake Snowflake, go to Projects, select Streamlit, and create a new Streamlit app. Be sure and set the database and schema context when naming the new Streamlit app.
+2. Copy and paste the code block below into the Streamlit editor and click `Run`.
+
 ```python
 #
 # Fivetran Snowflake Cortex Streamlit Lab
@@ -522,7 +526,8 @@ def main():
         companies_df = session.sql(company_query).to_pandas()
         selected_company = st.selectbox(
             "Select Company",
-            companies_df['COMPANY_NAME'].tolist()
+            options=[""] + companies_df['COMPANY_NAME'].tolist(),
+            help="Type to search for a specific company"
         )
         
         # Template Selection
