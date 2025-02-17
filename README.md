@@ -1,4 +1,4 @@
-# QBR Data Generator
+# QBR Data Generator and Enterprise QBR Generator
 
 This project generates synthetic data for use in a QBR (Quarterly Business Review) generation application. The data generator simulates a combined dataset from a CRM (e.g. SFDC, Hubspot, D365), an issue and project tracking solution like Jira, and a customer service and support platform such as Zendesk. The generated data includes:
 - 750 randomly generated records with industry-specific company names
@@ -8,6 +8,8 @@ This project generates synthetic data for use in a QBR (Quarterly Business Revie
 In addition, the second part of this project addresses two critical sales challenges that are organization-wide in every company:
 1. Creating reliable, standardized quarterly business review presentations for sales management
 2. Reducing (or potentially eliminating) the time account executives spend preparing QBRs
+
+![QBR Generator Data App](images/enterprise_qbr_generator.png)
 
 ## Project Setup
 
@@ -317,35 +319,14 @@ import time
 
 # Configuration Constants
 MODELS = [
-    "llama3.2-3b",
-    "claude-3-5-sonnet",
-    "mistral-large2",
-    "llama3.1-8b",
-    "llama3.1-405b",
-    "llama3.1-70b",
-    "mistral-7b",
-    "jamba-1.5-large",
-    "mixtral-8x7b",
-    "reka-flash",
-    "gemma-7b"
+    "llama3.2-3b", "claude-3-5-sonnet", "mistral-large2", "llama3.1-8b", "llama3.1-405b",
+    "llama3.1-70b", "mistral-7b", "jamba-1.5-large", "mixtral-8x7b", "reka-flash", "gemma-7b"
 ]
 
 CHUNK_NUMBER = [4,6,8,10,12,14,16]
 
-# Configuration Constants
-QBR_TEMPLATES = [
-    "Standard QBR",
-    "Executive Summary Only",
-    "Technical Deep Dive",
-    "Customer Success Focus"
-]
-
-VIEW_TYPES = [
-    "Executive View",
-    "Technical View",
-    "Customer Success View",
-    "Sales View"
-]
+QBR_TEMPLATES = ["Standard QBR", "Executive Summary Only", "Technical Deep Dive", "Customer Success Focus"]
+VIEW_TYPES = ["Sales View", "Executive View", "Technical View", "Customer Success View"]
 
 CONTEXT_CHUNKS = [4, 6, 8, 10, 12]
 
@@ -356,8 +337,114 @@ except:
     st.error("Could not get active Snowflake session. Please check your connection.")
     st.stop()
 
+def build_prompt(company_data, similar_contexts, template_type, view_type):
+    """Builds a prompt with RAG context using template modifications and view-specific emphasis."""
+
+    template_instructions = {
+        "Standard QBR": """
+        This is a full Quarterly Business Review (QBR) covering all key aspects, including health score analysis, adoption metrics, customer satisfaction, and strategic recommendations.
+        """,
+        "Executive Summary Only": """
+        This QBR should be concise and high-level, focusing only on key insights, major wins, critical challenges, and high-level recommendations.
+        Exclude deep technical details, adoption trends, and granular product feature analysis.
+        """,
+        "Technical Deep Dive": """
+        This QBR should focus on technical aspects such as system architecture, integrations, API usage, performance metrics, and technical challenges.
+        Prioritize technical success metrics, potential optimizations, and engineering recommendations.
+        Minimize business-level overviews and executive summaries.
+        """,
+        "Customer Success Focus": """
+        This QBR should emphasize customer engagement, product adoption, support trends, and user satisfaction.
+        Focus on training needs, adoption blockers, support ticket patterns, and customer success strategies.
+        Minimize in-depth technical or executive-level details.
+        """
+    }
+
+    view_type_instructions = {
+        "Sales View": """
+        This QBR should focus on revenue impact, upsell opportunities, contract value, expansion potential, and risk mitigation.
+        Prioritize key financial metrics, deal health, and strategic recommendations for account growth.
+        Minimize highly technical discussions unless relevant for deal positioning.
+        """,
+        "Executive View": """
+        This QBR should provide a high-level strategic overview, emphasizing business outcomes, financial impact, and alignment with company goals.
+        Keep details concise, use bullet points, and focus on key wins, challenges, and high-level recommendations.
+        Minimize operational or highly technical details.
+        """,
+        "Technical View": """
+        This QBR should provide a deep dive into system performance, architecture, integrations, and product adoption from a technical perspective.
+        Prioritize API usage, reliability metrics, infrastructure considerations, and upcoming technical improvements.
+        Minimize business-oriented insights unless relevant to product engineering.
+        """,
+        "Customer Success View": """
+        This QBR should focus on customer satisfaction, adoption trends, support tickets, training needs, and customer engagement.
+        Prioritize recommendations for improving retention, reducing churn, and addressing adoption blockers.
+        Minimize purely financial or highly technical content unless relevant for success strategy.
+        """
+    }
+
+    view_based_sections = {
+        "Sales View": """
+        1. Account Health Summary  
+        2. Revenue & Expansion Opportunities  
+        3. Usage Trends & Adoption Insights  
+        4. Competitive Positioning  
+        5. Strategic Sales Recommendations  
+        """,
+        "Executive View": """
+        1. Key Business Outcomes  
+        2. ROI & Financial Impact  
+        3. Adoption & Customer Engagement  
+        4. Strategic Roadmap Alignment  
+        5. High-Level Recommendations  
+        """,
+        "Technical View": """
+        1. System Performance & API Usage  
+        2. Infrastructure & Security Considerations  
+        3. Feature Adoption & Implementation Status  
+        4. Engineering Challenges & Optimization Strategies  
+        5. Technical Roadmap & Upcoming Enhancements  
+        """,
+        "Customer Success View": """
+        1. Customer Engagement & Satisfaction Metrics  
+        2. Product Adoption & User Retention  
+        3. Support Trends & Resolution Efficiency  
+        4. Training & Enablement Opportunities  
+        5. Customer Success Strategy & Next Steps  
+        """
+    }
+
+    qbr_type_instructions = template_instructions.get(template_type, "")
+    view_specific_instructions = view_type_instructions.get(view_type, "")
+    dynamic_sections = view_based_sections.get(view_type, "1. Executive Summary\n2. Business Impact\n3. Strategic Recommendations")
+
+    prompt = f"""
+    You are an expert business analyst creating a Quarterly Business Review (QBR). 
+    Generate a {template_type} QBR using the following data and format:
+
+    {qbr_type_instructions}
+
+    {view_specific_instructions}
+
+    Company Data:
+    {company_data}
+
+    Historical Context:
+    {similar_contexts if similar_contexts else 'No historical context available'}
+
+    Structure the QBR based on {view_type}, prioritizing the most relevant insights.
+    
+    Use the following section structure:
+    {dynamic_sections}
+
+    Format the QBR professionally with clear section headers and bullet points for key insights.
+    Prioritize the most relevant information for {view_type} and {template_type}.
+    """
+
+    return prompt
+
 def get_company_data(company_name):
-    """Retrieve company data from Snowflake"""
+    """Retrieve company data from Snowflake."""
     try:
         metrics_query = """
         SELECT 
@@ -378,92 +465,16 @@ def get_company_data(company_name):
         st.error(f"Error retrieving company data: {str(e)}")
         return None
 
-def get_similar_contexts(company_name, num_chunks):
-    """Retrieve similar QBR contexts using vector similarity"""
+def generate_qbr_content(company_data, similar_contexts, template_type, view_type, selected_model):
+    """Generate QBR content using Snowflake Cortex."""
     try:
-        similarity_query = """
-        WITH similarity_cte AS (
-            SELECT 
-                company_name,
-                qbr_information,
-                vector_cosine_similarity(
-                    QBR_EMBEDDINGS,
-                    (SELECT QBR_EMBEDDINGS FROM QBR_DATA_VECTORS WHERE company_name = ?)
-                ) as similarity
-            FROM QBR_DATA_VECTORS
-            WHERE company_name != ?
-            QUALIFY ROW_NUMBER() OVER (ORDER BY similarity DESC) <= ?
-        )
-        SELECT qbr_information
-        FROM similarity_cte
-        """
-        return session.sql(similarity_query, params=[company_name, company_name, num_chunks]).to_pandas()
-    except Exception as e:
-        st.error(f"Error retrieving similar contexts: {str(e)}")
-        return None
-
-def generate_qbr_content(company_data, similar_contexts, template_type, selected_model):
-    """Generate QBR content using Snowflake Cortex"""
-    try:
-        prompt = f"""
-        You are an expert business analyst creating a Quarterly Business Review (QBR). 
-        Generate a detailed {template_type} QBR using the following data and format:
-
-        Company Data:
-        {company_data.to_string()}
-        
-        Historical Context:
-        {similar_contexts.to_string() if similar_contexts is not None else 'No historical context available'}
-        
-        Please create a comprehensive QBR with these specific sections:
-
-        1. Executive Summary
-        - Overall health assessment (use the health score provided)
-        - Key wins from this quarter (based on metrics)
-        - Critical challenges identified
-        - High-priority strategic recommendations
-
-        2. Business Impact Analysis
-        - ROI analysis based on current usage
-        - Analysis of efficiency gains/losses
-        - Identified business problems and their impact
-        - Value realization metrics
-
-        3. Product Adoption Review
-        - Detailed feature usage analysis
-        - Implementation progress report
-        - Analysis of adoption rates and trends
-        - Identified adoption blockers and solutions
-
-        4. Support and Success Analysis
-        - Support ticket trend analysis
-        - Resolution efficiency metrics
-        - Customer satisfaction analysis
-        - Outstanding issues and their business impact
-
-        5. Strategic Recommendations
-        - Expansion opportunities
-        - Risk mitigation strategies
-        - Training and enablement needs
-        - Product roadmap alignment recommendations
-
-        6. Action Items
-        - Specific tasks for both customer and vendor teams
-        - Clear implementation timeline
-        - Required resources and owners
-        - Expected outcomes and success metrics
-
-        Format the QBR professionally with clear section headers and bullet points for key items.
-        Include specific metrics and data points to support all observations and recommendations.
-        """
-        
+        prompt = build_prompt(company_data, similar_contexts, template_type, view_type)
         cortex_query = """
         SELECT SNOWFLAKE.CORTEX.COMPLETE(
             ?,
             ?
         ) as response
         """
-        
         response = session.sql(cortex_query, params=[selected_model, prompt]).collect()[0][0]
         return response
     except Exception as e:
@@ -502,6 +513,8 @@ def display_metrics_dashboard(metrics_df):
             delta=None
         )
 
+import streamlit as st
+
 def main():
     st.set_page_config(layout="wide", page_title="Enterprise QBR Generator")
     
@@ -512,17 +525,18 @@ def main():
     # Title and Description
     st.title("🎯 Enterprise QBR Generator")
     st.write("""
-    Generate comprehensive, data-driven Quarterly Business Reviews using advanced analytics 
-    and machine learning. This tool combines historical data, current metrics, and predictive
-    insights to create actionable QBRs.
+    Generate comprehensive, data-driven Quarterly Business Reviews using Fivetran and Snowflake Cortex. 
+    This Streamlit in Snowflake Gen AI Data App combines sales data, support data, product data, 
+    current metrics, and predictive insights to create instant, standardized, and actionable QBRs.
     """)
-    
+
     # Sidebar Configuration
     with st.sidebar:
         st.header("QBR Configuration")
         
         # Business Settings
         st.subheader("Business Settings")
+        
         # Company Selection
         company_query = """
         SELECT DISTINCT COMPANY_NAME
@@ -575,6 +589,32 @@ def main():
                 "Enable Data Validation",
                 help="Add validation steps to the QBR process"
             )
+
+        # Add spacing before branding text
+        for _ in range(2):
+            st.write("")
+
+        # Branding Text (Above the logo)
+        st.markdown(
+            "<h4 style='text-align: center; font-weight: normal;'>Fivetran | Snowflake</h4>", 
+            unsafe_allow_html=True
+        )
+
+        # Add spacing before logo
+        for _ in range(1):
+            st.write("")
+
+        # Correct logo URL
+        logo_url = "https://i.imgur.com/9lS8Y34.png"
+
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: center;">
+                <img src="{logo_url}" width="150">
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
     # Main Content Area
     tabs = st.tabs(["QBR Generation", "Historical QBRs", "Settings"])
@@ -602,6 +642,7 @@ def main():
                             company_data,
                             similar_contexts,
                             template_type,
+                            view_type,
                             selected_model
                         )
                         
@@ -647,4 +688,4 @@ if __name__ == "__main__":
 
 ### Enterprise QBR Generator: Streamlit in Snowflake RAG-based, Gen AI Data App
 
-![QBR Generator Data App](images/enterprise_qbr_generator.png)
+![QBR Generator Data App](images/enterprise_qbr_generator2.png)
