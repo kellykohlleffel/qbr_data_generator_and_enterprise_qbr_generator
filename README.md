@@ -831,3 +831,5 @@ if __name__ == "__main__":
 ### Enterprise QBR Generator: Streamlit in Snowflake RAG-based, Gen AI Data App
 
 ![QBR Generator Data App](images/enterprise_qbr_generator2.png)
+
+![QBR Generator Data App](images/settings.png)
