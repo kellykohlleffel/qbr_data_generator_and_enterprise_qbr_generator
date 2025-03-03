@@ -515,6 +515,75 @@ def display_metrics_dashboard(metrics_df):
 
 import streamlit as st
 
+def search_similar_companies(query, top_k=3, model="claude-3-5-sonnet"):
+    """Search for similar companies with improved accuracy and formatting."""
+    try:
+        # Direct SQL approach for exact name matching - this will be more accurate for exact searches
+        exact_match_query = """
+        SELECT 
+            COMPANY_NAME,
+            QBR_INFORMATION
+        FROM QBR_DATA_VECTORS
+        WHERE LOWER(COMPANY_NAME) LIKE LOWER(?)
+        LIMIT ?
+        """
+        
+        # Try with wildcards for partial matching
+        exact_results = session.sql(exact_match_query, params=[f"%{query}%", top_k]).to_pandas()
+        
+        # If no exact match, fall back to content search
+        if exact_results.empty:
+            content_query = """
+            SELECT 
+                COMPANY_NAME,
+                QBR_INFORMATION
+            FROM QBR_DATA_VECTORS
+            WHERE CONTAINS(QBR_INFORMATION, ?)
+            LIMIT ?
+            """
+            results = session.sql(content_query, params=[query, top_k]).to_pandas()
+        else:
+            results = exact_results
+        
+        if results.empty:
+            # If still no results, use Cortex as a last resort
+            search_prompt = f"""
+            Based on the search query "{query}", search through a database of companies.
+            Return information about companies that match this query.
+            """
+            
+            cortex_query = """
+            SELECT SNOWFLAKE.CORTEX.COMPLETE(
+                ?,
+                ?
+            ) as response
+            """
+            
+            response = session.sql(cortex_query, params=[model, search_prompt]).collect()[0][0]
+            
+            if not response:
+                return None
+                
+            return response
+        
+        # Format the results with clean formatting
+        formatted_results = []
+        for _, row in results.iterrows():
+            # Clean up the QBR information - replace any strange character sequences
+            clean_info = row['QBR_INFORMATION']
+            # Remove any strange sequences of single characters
+            import re
+            clean_info = re.sub(r'([A-Za-z])\s*\n\s*([A-Za-z])\s*\n\s*([A-Za-z])', r'\1\2\3', clean_info)
+            clean_info = re.sub(r'\.([A-Za-z])', r'. \1', clean_info)  # Add space after periods
+            
+            formatted_results.append(f"**Company:** {row['COMPANY_NAME']}\n\n{clean_info}")
+        
+        return '\n\n---\n\n'.join(formatted_results)
+        
+    except Exception as e:
+        st.error(f"Error during search: {str(e)}")
+        return None
+
 def main():
     st.set_page_config(layout="wide", page_title="Enterprise QBR Generator")
     
@@ -678,7 +747,80 @@ def main():
     
     with tabs[2]:
         st.write("QBR Generation Settings")
-        st.write("Configure default templates, branding, and other settings here.")
+        
+        st.subheader("Snowflake Settings")
+        # Get current session information
+        try:
+            # Get the current context information
+            context_query = "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
+            context_result = session.sql(context_query).collect()
+            current_db = context_result[0][0] if context_result else "Not available"
+            current_schema = context_result[0][1] if context_result else "Not available"
+            
+            st.write(f"**Database:** {current_db}")
+            st.write(f"**Schema:** {current_schema}")
+            st.write(f"**Model:** {selected_model}")
+        except Exception as e:
+            st.error(f"Error retrieving Snowflake context: {str(e)}")
+        
+        # Add test search box
+        st.subheader("Test Semantic Search")
+        test_query = st.text_input("Enter a search query to test semantic search", 
+                              placeholder="E.g., capital forge, factory focus, kohlleffel inc")
+        if test_query and st.button("Search"):
+            with st.spinner("Searching similar companies..."):
+                similar_companies = search_similar_companies(test_query, top_k=3, model=selected_model)
+                if similar_companies:
+                    st.success(f"Found companies matching '{test_query}'")
+                    companies_list = similar_companies.split('\n\n---\n\n')
+                    
+                    for i, company in enumerate(companies_list):
+                        # Split company data into name and details
+                        parts = company.split('\n\n', 1)
+                        company_name = parts[0].replace('**Company:** ', '') if len(parts) > 0 else f"Result #{i+1}"
+                        company_details = parts[1] if len(parts) > 1 else company
+                        
+                        # Clean up formatting issues
+                        import re
+                        company_details = re.sub(r'([a-z])([A-Z])', r'\1 \2', company_details)  # Add space between lowercase followed by uppercase
+                        company_details = re.sub(r'\.([A-Z])', r'. \1', company_details)  # Add space after period followed by uppercase
+                        
+                        # Extract key metrics for better display
+                        metrics = {}
+                        # Try to extract commonly used metrics
+                        for metric in ["health score", "contract value", "CSAT score", "active users"]:
+                            pattern = rf"(?:the )?{metric}(?: is)? (\d+\.?\d*)"
+                            match = re.search(pattern, company_details.lower())
+                            if match:
+                                metrics[metric.title()] = match.group(1)
+                        
+                        # Create an expander for each company
+                        with st.expander(f"Company: {company_name}"):
+                            # Show key metrics in columns if available
+                            if metrics:
+                                cols = st.columns(len(metrics))
+                                for j, (metric, value) in enumerate(metrics.items()):
+                                    with cols[j]:
+                                        st.caption(metric)
+                                        if "value" in metric.lower():
+                                            st.markdown(f"**${value}**")
+                                        else:
+                                            st.markdown(f"**{value}**")
+                            
+                            # Display full company details with better formatting
+                            st.caption("Company Details")
+                            st.markdown(company_details)
+                            
+                            # Add a download button for each result with a unique key
+                            st.download_button(
+                                label="Download Details",
+                                data=f"# {company_name}\n\n{company_details}",
+                                file_name=f"{company_name.replace(' ', '_')}_details.md",
+                                mime="text/markdown",
+                                key=f"download_button_{i}_{company_name.replace(' ', '_')}"  # Add a unique key
+                            )
+                else:
+                    st.warning("No similar companies found.")
 
 if __name__ == "__main__":
     main()
