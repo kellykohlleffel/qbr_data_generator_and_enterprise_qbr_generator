@@ -8,10 +8,10 @@ from snowflake.snowpark.context import get_active_session
 import pandas as pd
 import time
 
-# Configuration Constants
+# Cortex models available in Snowflake
 MODELS = [
-    "llama3.2-3b", "claude-3-5-sonnet", "mistral-large2", "llama3.1-8b", "llama3.1-405b",
-    "llama3.1-70b", "mistral-7b", "jamba-1.5-large", "mixtral-8x7b", "reka-flash", "gemma-7b"
+    "llama3.1-70b", "llama3.1-8b", "claude-3-5-sonnet", "deepseek-r1", "snowflake-llama-3.1-405b", "snowflake-llama-3.3-70b", "mistral-large2", "llama3.2-3b",
+    "llama3.1-405b", "mistral-7b", "jamba-1.5-large", "mixtral-8x7b", "reka-flash", "gemma-7b"
 ]
 
 CHUNK_NUMBER = [4,6,8,10,12,14,16]
